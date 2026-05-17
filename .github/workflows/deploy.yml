@@ -13,8 +13,8 @@ jobs:
 
       - name: API Call to Splunk
         run: |
-          for file in rules/*.conf; do
-            rule_name=$(basename "$file" .conf)
+          for file in rules/*.spl; do
+            rule_name=$(basename "$file" .spl)
             search_query=$(cat "$file")
             
             echo "Deploying rule: $rule_name via API..."
