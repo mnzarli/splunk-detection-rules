@@ -13,24 +13,20 @@ jobs:
 
       - name: API Call to Splunk
         run: |
-          # 1. Mühafizə addımı: İP-nin içində səhvən yazılan 'https://' və ya 'http://' hissələrini silirik
-          CLEAN_HOST=$(echo "${{ secrets.SPLUNK_HOST }}" | sed -e 's|^https://||' -e 's|^http://||' -e 's|/$||' | tr -d '[:space:]')
-          
-          for file in rules/*.spl; do
-            rule_name=$(basename "$file" .spl)
+          for file in rules/*.conf; do
+            rule_name=$(basename "$file" .conf)
             search_query=$(cat "$file")
             
-            echo "Deploying rule: $rule_name via API to $CLEAN_HOST..."
+            echo "Deploying rule: $rule_name via API..."
             
-            # 2. Təmizlənmiş İP ilə sorğunu göndəririk
-            curl -k -X POST "https://${CLEAN_HOST}:8089/services/saved/searches" \
+            curl -k -X POST "https://${{ secrets.SPLUNK_HOST }}:8089/services/saved/searches" \
                  -H "Authorization: Bearer ${{ secrets.SPLUNK_TOKEN }}" \
                  -H "Content-Type: application/x-www-form-urlencoded" \
-                 --data-urlencode "name=$rule_name" \
-                 --data-urlencode "search=$search_query" \
-                 -d "alert_type=number of events" \
-                 -d "alert_comparator=greater than" \
-                 -d "alert_threshold=0" \
+                 -d name="$rule_name" \
+                 -d search="$search_query" \
+                 -d alert_type="number of events" \
+                 -d alert_comparator="greater than" \
+                 -d alert_threshold="0" \
                  -d "action.webhook.enable=1" \
                  -d "is_scheduled=1" \
                  -d "cron_schedule=*/1 * * * *" \
