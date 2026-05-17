@@ -1,4 +1,5 @@
 name: Splunk Rule Deployer
+
 on:
   push:
     paths:
@@ -13,23 +14,26 @@ jobs:
 
       - name: API Call to Splunk
         run: |
-          for file in rules/*.conf; do
-            rule_name=$(basename "$file" .conf)
+          for file in rules/*.spl; do
+            # Eğer eşleşen dosya yoksa döngünün hata vermeden geçmesini sağlar
+            [ -e "$file" ] || continue
+            
+            rule_name=$(basename "$file" .spl)
             search_query=$(cat "$file")
             
             echo "Deploying rule: $rule_name via API..."
             
             curl -k -X POST "https://${{ secrets.SPLUNK_HOST }}:8089/services/saved/searches" \
-                 -H "Authorization: Bearer ${{ secrets.SPLUNK_TOKEN }}" \
-                 -H "Content-Type: application/x-www-form-urlencoded" \
-                 -d name="$rule_name" \
-                 -d search="$search_query" \
-                 -d alert_type="number of events" \
-                 -d alert_comparator="greater than" \
-                 -d alert_threshold="0" \
-                 -d "action.webhook.enable=1" \
-                 -d "is_scheduled=1" \
-                 -d "cron_schedule=*/1 * * * *" \
-                 -d "is_visible=1" \
-                 -d "output_mode=json"
+              -H "Authorization: Bearer ${{ secrets.SPLUNK_TOKEN }}" \
+              -H "Content-Type: application/x-www-form-urlencoded" \
+              --data-urlencode "name=$rule_name" \
+              --data-urlencode "search=$search_query" \
+              -d "alert_type=number of events" \
+              -d "alert_comparator=greater than" \
+              -d "alert_threshold=0" \
+              -d "action.webhook.enable=1" \
+              -d "is_scheduled=1" \
+              -d "cron_schedule=*/1 * * * *" \
+              -d "is_visible=1" \
+              -d "output_mode=json"
           done
