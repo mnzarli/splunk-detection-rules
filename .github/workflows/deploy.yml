@@ -13,13 +13,17 @@ jobs:
 
       - name: API Call to Splunk
         run: |
+          # 1. Mühafizə addımı: İP-nin içində səhvən yazılan 'https://' və ya 'http://' hissələrini silirik
+          CLEAN_HOST=$(echo "${{ secrets.SPLUNK_HOST }}" | sed -e 's|^https://||' -e 's|^http://||' -e 's|/$||' | tr -d '[:space:]')
+          
           for file in rules/*.spl; do
             rule_name=$(basename "$file" .spl)
             search_query=$(cat "$file")
             
-            echo "Deploying rule: $rule_name via API..."
+            echo "Deploying rule: $rule_name via API to $CLEAN_HOST..."
             
-            curl -k -X POST "https://${{ secrets.SPLUNK_HOST }}:8089/services/saved/searches" \
+            # 2. Təmizlənmiş İP ilə sorğunu göndəririk
+            curl -k -X POST "https://${CLEAN_HOST}:8089/services/saved/searches" \
                  -H "Authorization: Bearer ${{ secrets.SPLUNK_TOKEN }}" \
                  -H "Content-Type: application/x-www-form-urlencoded" \
                  --data-urlencode "name=$rule_name" \
